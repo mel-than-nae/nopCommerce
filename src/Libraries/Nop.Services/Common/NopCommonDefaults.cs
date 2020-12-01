@@ -100,6 +100,11 @@ namespace Nop.Services.Common
         /// </remarks>
         public static string LanguagePacksDownloadPath => "https://downloads.nopcommerce.com/languagepacks/origin/localization_nopCommerce-{0}/lang/{1}/language_pack.{1}.xml";
 
+        /// <summary>
+        /// Gets minimal progress of language pack translation to download and install
+        /// </summary>
+        public static int LanguagePackMinTranslationProgressToInstall => 80;
+
         #endregion
 
         #region nopCommerce official site
@@ -134,9 +139,9 @@ namespace Nop.Services.Common
         /// {1} : whether the store based is on the localhost
         /// {2} : admin email
         /// {3} : store URL
-        /// {4} : language code
+        /// {4} : language culture
         /// </remarks>
-        public static string NopInstallationCompletedPath => "installation-completed?version={0}&local={1}&email={2}&url={3}&language={4}";
+        public static string NopInstallationCompletedPath => "installation-completed?version={0}&local={1}&email={2}&url={3}&culture={4}";
 
         /// <summary>
         /// Gets a path to request the nopCommerce official site for available categories of marketplace extensions

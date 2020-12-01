@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Newtonsoft.Json;
 using Nop.Core;
 using Nop.Core.Caching;
 using Nop.Core.Configuration;
@@ -27,7 +28,6 @@ namespace Nop.Web.Controllers
         private readonly AppSettings _appSettings;
         private readonly IInstallationLocalizationService _locService;
         private readonly INopFileProvider _fileProvider;
-        private readonly IUploadService _uploadService;
 
         #endregion
 
@@ -35,13 +35,11 @@ namespace Nop.Web.Controllers
 
         public InstallController(AppSettings appSettings,
             IInstallationLocalizationService locService,
-            INopFileProvider fileProvider,
-            IUploadService uploadService)
+            INopFileProvider fileProvider)
         {
             _appSettings = appSettings;
             _locService = locService;
             _fileProvider = fileProvider;
-            _uploadService = uploadService;
         }
 
         #endregion
@@ -191,6 +189,20 @@ namespace Nop.Web.Controllers
 
                 dataProvider.InitializeDatabase();
 
+                //get language pack info
+                try
+                {
+                    var client = EngineContext.Current.Resolve<NopHttpClient>();
+                    var resultString = await client.InstallationCompletedAsync(model.AdminEmail, model.Country);
+                    var result = JsonConvert.DeserializeAnonymousType(resultString,
+                        new { Message = string.Empty, LanguagePack = new { Culture = string.Empty, Progress = 0, DownloadLink = string.Empty } });
+                    if (result.LanguagePack.Progress > NopCommonDefaults.LanguagePackMinTranslationProgressToInstall)
+                    {
+                        //download language pack
+                    }
+                }
+                catch { }
+
                 //now resolve installation service
                 var installationService = EngineContext.Current.Resolve<IInstallationService>();
 
@@ -201,7 +213,8 @@ namespace Nop.Web.Controllers
                 if (model.InstallRegionalResources)
                 {
                     //upload CLDR
-                    _uploadService.UploadLocalePattern(new CultureInfo(model.Country));
+                    var uploadService = EngineContext.Current.Resolve<IUploadService>();
+                    uploadService.UploadLocalePattern(new CultureInfo(model.Country));
                 }
 
                 if (model.InstallSampleData)
@@ -236,15 +249,6 @@ namespace Nop.Web.Controllers
                     var provider = (IPermissionProvider)Activator.CreateInstance(providerType);
                     EngineContext.Current.Resolve<IPermissionService>().InstallPermissions(provider);
                 }
-
-                //installation completed notification
-                try
-                {
-                    var languageCode = _locService.GetCurrentLanguage().Code;
-                    var client = EngineContext.Current.Resolve<NopHttpClient>();
-                    await client.InstallationCompletedAsync(model.AdminEmail, languageCode[0..2]);
-                }
-                catch { }
 
                 return View(new InstallModel { RestartUrl = Url.RouteUrl("Homepage") });
 
